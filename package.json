@@ -1,0 +1,25 @@
+{
+  "name": "ultron-backend",
+  "version": "1.0.0",
+  "description": "API de Gestão do Sistema Ultron",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dockerode": "^4.0.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "systeminformation": "^5.29.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
