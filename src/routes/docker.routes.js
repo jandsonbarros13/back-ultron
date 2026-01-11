@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.get('/list', DockerController.listarContainers);
 router.post('/action', DockerController.executarAcao);
+router.get('/sync', DockerController.sincronizarAgora);
 
 export default router;

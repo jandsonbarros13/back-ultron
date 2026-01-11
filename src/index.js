@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import si from 'systeminformation';
+import { pool, checkConnection } from './config/db.js';
 import loginRoutes from './routes/login.routes.js';
 import navegadorRoutes from './routes/navegador.routes.js';
 import editorRoutes from './routes/editor.routes.js';
@@ -81,8 +82,14 @@ app.use('/api/navegador', navegadorRoutes);
 app.use('/api/editor', editorRoutes);
 app.use('/api/docker', dockerRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`🚀 ULTRON BACKEND: http://localhost:${PORT}`);
+    const dbStatus = await checkConnection();
+    if (dbStatus.success) {
+        console.log(`✅ DATABASE: CONECTADO VIA ${dbStatus.type}`);
+    } else {
+        console.error(`❌ DATABASE: FALHA TOTAL`, dbStatus.error);
+    }
 });
 
 export default app;
