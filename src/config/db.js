@@ -2,34 +2,27 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import 'dotenv/config';
 
-const localConfig = {
-  connectionString: process.env.DATABASE_LOCAL,
-  ssl: false,
-  connectionTimeoutMillis: 2000 
-};
+const isCloud = process.env.VERCEL || !process.env.DATABASE_LOCAL;
 
-const cloudConfig = {
-  connectionString: process.env.DATABASE_CLOUD,
+const config = isCloud ? {
+  connectionString: process.env.DATABASE_CLOUD || process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
+} : {
+  connectionString: process.env.DATABASE_LOCAL,
+  ssl: false
 };
 
-export let pool = new Pool(localConfig);
+export const pool = new Pool(config);
 
 export const checkConnection = async () => {
   try {
     const client = await pool.connect();
-    console.log('📡 Tentando conexão local...');
+    const type = isCloud ? 'CLOUD/SUPABASE' : 'LOCAL';
+    console.log(`✅ DATABASE: CONECTADO VIA ${type}`);
     client.release();
-    return { type: 'LOCAL', success: true };
+    return { type, success: true };
   } catch (err) {
-    console.log('⚠️ LOCAL OFFLINE. REDIRECIONANDO PARA SUPABASE...');
-    pool = new Pool(cloudConfig);
-    try {
-      const client = await pool.connect();
-      client.release();
-      return { type: 'CLOUD', success: true };
-    } catch (cloudErr) {
-      return { type: 'NONE', success: false, error: cloudErr.message };
-    }
+    console.error('❌ ERRO AO CONECTAR NO BANCO:', err.message);
+    return { type: 'NONE', success: false, error: err.message };
   }
 };
