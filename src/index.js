@@ -76,9 +76,9 @@ app.get('/api/system/monitor', async (req, res) => {
             uptime: data.uptime || "0h 0m",
             cpuUsage: parseFloat(data.cpu_usage) || 0,
             memoryUsage: parseFloat(data.ram_usage) || 0,
-            freeMemory: "Calculando...",
-            totalMemory: "Disponível",
-            diskUsage: data.disk_usage || 0
+            diskUsage: parseFloat(data.disk_usage) || 0,
+            freeMemory: data.free_memory || "N/A",
+            processes: data.processes || []
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
