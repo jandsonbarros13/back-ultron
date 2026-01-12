@@ -72,9 +72,10 @@ app.get('/api/system/monitor', async (req, res) => {
 
         if (error) throw error;
 
-        // Mapeamento exato entre Banco de Dados e Resposta da API
+        // O segredo está aqui: mapear os nomes do Banco (snake_case) 
+        // para os nomes que o seu App Ionic espera (camelCase)
         res.json({
-            uptime: data.uptime || "N/A",
+            uptime: data.uptime || "0h 0m",
             cpuUsage: parseFloat(data.cpu_usage) || 0,
             memoryUsage: parseFloat(data.ram_usage) || 0,
             diskUsage: parseFloat(data.disk_usage) || 0,
