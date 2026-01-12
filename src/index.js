@@ -81,8 +81,7 @@ app.get('/api/system/monitor', async (req, res) => {
             diskUsage: data.disk_usage || 0
         });
     } catch (error) {
-        console.error('Erro Supabase:', error.message);
-        res.status(500).json({ error: "Erro ao ler dados do robô no banco" });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -96,8 +95,6 @@ app.listen(PORT, async () => {
     const dbStatus = await checkConnection();
     if (dbStatus.success) {
         console.log(`✅ DATABASE: CONECTADO VIA ${dbStatus.type}`);
-    } else {
-        console.error(`❌ DATABASE: FALHA TOTAL`, dbStatus.error);
     }
 });
 
