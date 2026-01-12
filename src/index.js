@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import si from 'systeminformation';
-import { pool, checkConnection } from './config/db.js';
+import { createClient } from '@supabase/supabase-js';
+import { checkConnection } from './config/db.js';
 import loginRoutes from './routes/login.routes.js';
 import navegadorRoutes from './routes/navegador.routes.js';
 import editorRoutes from './routes/editor.routes.js';
@@ -10,6 +10,11 @@ import dockerRoutes from './routes/docker.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
 
 app.use(cors({ 
     origin: '*', 
@@ -57,23 +62,27 @@ app.get('/', (req, res) => {
     `);
 });
 
-app.get('/ultron/system/monitor', async (req, res) => {
+app.get('/api/system/monitor', async (req, res) => {
     try {
-        const cpu = await si.currentLoad();
-        const mem = await si.mem();
-        const disk = await si.fsSize();
-        const time = si.time();
+        const { data, error } = await supabase
+            .from('system_stats')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        if (error) throw error;
 
         res.json({
-            uptime: `${Math.floor(time.uptime / 3600)}h ${Math.floor((time.uptime % 3600) / 60)}m`,
-            cpuUsage: Math.round(cpu.currentLoad),
-            memoryUsage: Math.round((mem.active / mem.total) * 100),
-            freeMemory: `${(mem.available / 1024 / 1024 / 1024).toFixed(1)}GB`,
-            totalMemory: `${(mem.total / 1024 / 1024 / 1024).toFixed(1)}GB`,
-            diskUsage: Math.round(disk[0].use)
+            uptime: data.uptime || "0h 0m",
+            cpuUsage: parseFloat(data.cpu_usage) || 0,
+            memoryUsage: parseFloat(data.ram_usage) || 0,
+            freeMemory: "Calculando...",
+            totalMemory: "Disponível",
+            diskUsage: data.disk_usage || 0
         });
     } catch (error) {
-        res.status(500).json({ error: "Erro ao ler sistema" });
+        console.error('Erro Supabase:', error.message);
+        res.status(500).json({ error: "Erro ao ler dados do robô no banco" });
     }
 });
 
