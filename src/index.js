@@ -72,8 +72,9 @@ app.get('/api/system/monitor', async (req, res) => {
 
         if (error) throw error;
 
+        // Mapeamento exato entre Banco de Dados e Resposta da API
         res.json({
-            uptime: data.uptime || "0h 0m",
+            uptime: data.uptime || "N/A",
             cpuUsage: parseFloat(data.cpu_usage) || 0,
             memoryUsage: parseFloat(data.ram_usage) || 0,
             diskUsage: parseFloat(data.disk_usage) || 0,
