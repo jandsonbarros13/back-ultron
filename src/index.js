@@ -63,6 +63,10 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/system/monitor', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
         const { data, error } = await supabase
             .from('system_stats')
@@ -72,8 +76,6 @@ app.get('/api/system/monitor', async (req, res) => {
 
         if (error) throw error;
 
-        // O segredo está aqui: mapear os nomes do Banco (snake_case) 
-        // para os nomes que o seu App Ionic espera (camelCase)
         res.json({
             uptime: data.uptime || "0h 0m",
             cpuUsage: parseFloat(data.cpu_usage) || 0,
