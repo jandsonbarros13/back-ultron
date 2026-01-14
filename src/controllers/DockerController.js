@@ -8,12 +8,16 @@ const supabase = createClient(
 
 export const listarContainers = async (req, res) => {
     try {
+        // Buscamos os containers ordenando pelo último sincronismo (mais recentes primeiro)
         const { data, error } = await supabase
             .from('docker_containers')
             .select('*')
-            .order('name', { ascending: true });
+            .order('last_sync', { ascending: false });
 
         if (error) throw error;
+
+        // Forçamos o Header para o App não guardar cache de dados velhos
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -26,7 +30,10 @@ export const executarAcao = async (req, res) => {
     try {
         const { error } = await supabase
             .from('docker_containers')
-            .update({ pending_action: action })
+            .update({ 
+                pending_action: action,
+                last_sync: new Date().toISOString() // Marca que houve uma tentativa de alteração
+            })
             .eq('docker_id', id);
 
         if (error) throw error;
