@@ -1,55 +1,55 @@
-import { pool } from '../config/db.js';
-import * as DockerModel from '../models/Docker.js';
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
+// Inicializa o Supabase (garanta que estas variáveis estão na Vercel)
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
+
+// 1. LISTAR: Busca os containers que o robô local já sincronizou
 export const listarContainers = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM docker_containers ORDER BY last_sync DESC');
-        res.json(result.rows);
+        const { data, error } = await supabase
+            .from('docker_containers')
+            .select('*')
+            .order('last_sync', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
     } catch (err) {
-        res.status(500).json({ error: "Erro ao listar containers do banco: " + err.message });
+        res.status(500).json({ error: "Erro ao listar banco: " + err.message });
     }
 };
 
+// 2. EXECUTAR AÇÃO: Não chama o Docker! Apenas agenda no banco.
 export const executarAcao = async (req, res) => {
-    const { id, action } = req.body;
-    
+    const { id, action } = req.body; // id é o docker_id (string longa do docker)
+
     if (!id || !action) {
         return res.status(400).json({ error: "ID e Ação são obrigatórios" });
     }
 
     try {
-        if (action === 'start') {
-            await DockerModel.startContainer(id);
-        } else if (action === 'stop') {
-            await DockerModel.stopContainer(id);
-        } else {
-            return res.status(400).json({ error: "Ação inválida. Use start ou stop." });
-        }
+        // Atualiza o campo pending_action para o robô local ler
+        const { error } = await supabase
+            .from('docker_containers')
+            .update({ pending_action: action })
+            .eq('docker_id', id);
+
+        if (error) throw error;
 
         res.json({ 
             success: true, 
-            message: `Container ${id}: comando ${action} enviado com sucesso.` 
+            message: `Comando ${action} enviado para o sistema local.` 
         });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao executar ação no Docker: " + err.message });
+        res.status(500).json({ error: "Erro ao agendar comando: " + err.message });
     }
 };
 
+// 3. SINCRONIZAR: Na Vercel, apenas retorna sucesso 
+// (A sincronia real é feita pelo robô local)
 export const sincronizarAgora = async (req, res) => {
-    try {
-        const containers = await DockerModel.listAll();
-        
-        for (const c of containers) {
-            await pool.query(`
-                INSERT INTO docker_containers (docker_id, name, image, state, status)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (name) 
-                DO UPDATE SET state = EXCLUDED.state, status = EXCLUDED.status, last_sync = CURRENT_TIMESTAMP
-            `, [c.id, c.name, c.image, c.state, c.status]);
-        }
-        
-        res.json({ success: true, message: "Sincronização manual concluída" });
-    } catch (err) {
-        res.status(500).json({ error: "Erro na sincronização manual: " + err.message });
-    }
+    res.json({ success: true, message: "Aguardando sincronização do robô local..." });
 };
