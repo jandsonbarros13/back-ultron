@@ -8,16 +8,19 @@ const supabase = createClient(
 
 export const listarContainers = async (req, res) => {
     try {
-        // Buscamos os containers ordenando pelo último sincronismo (mais recentes primeiro)
+        // Buscamos os containers sem cache
         const { data, error } = await supabase
             .from('docker_containers')
             .select('*')
-            .order('last_sync', { ascending: false });
+            .order('name', { ascending: true });
 
         if (error) throw error;
 
-        // Forçamos o Header para o App não guardar cache de dados velhos
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        // HEADERS CRÍTICOS: Impedem a Vercel e o Browser de cachear dados velhos
+        res.setHeader('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+        res.setHeader('CDN-Cache-Control', 'no-store');
+        res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+        
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -26,24 +29,22 @@ export const listarContainers = async (req, res) => {
 
 export const executarAcao = async (req, res) => {
     const { id, action } = req.body;
-
     try {
         const { error } = await supabase
             .from('docker_containers')
             .update({ 
                 pending_action: action,
-                last_sync: new Date().toISOString() // Marca que houve uma tentativa de alteração
+                last_sync: new Date().toISOString()
             })
             .eq('docker_id', id);
 
         if (error) throw error;
-
-        res.json({ success: true, message: "Comando agendado com sucesso!" });
+        res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao agendar: " + err.message });
+        res.status(500).json({ error: err.message });
     }
 };
 
 export const sincronizarAgora = async (req, res) => {
-    res.json({ success: true, message: "Sincronização solicitada ao robô local" });
+    res.json({ success: true });
 };
