@@ -1,62 +1,45 @@
-import * as Site from '../models/Site.js';
-import axios from 'axios';
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 export const listarSites = async (req, res) => {
-    try {
-        const sites = await Site.getAll();
-        res.json(sites || []);
-    } catch (err) {
-        console.error("ERRO AO LISTAR SITES:", err);
-        res.status(500).json({ error: "Erro ao buscar sites no banco de dados" });
-    }
-};
-
-export const atualizarSite = async (req, res) => {
-    const { id, selected } = req.body;
-    try {
-        await Site.updateStatus(id, selected);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const { data, error } = await supabase.from('sites').select('*').order('id', { ascending: true });
+    if (error) return res.status(500).json(error);
+    res.json(data || []);
 };
 
 export const adicionarSite = async (req, res) => {
     const { nome, url, icon } = req.body;
-    try {
-        await Site.create(nome, url, icon);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const { error } = await supabase.from('sites').insert([{ nome, url, icon, selected: true }]);
+    if (error) return res.status(500).json(error);
+    res.json({ success: true });
 };
 
 export const editarSite = async (req, res) => {
     const { id, nome, url, icon } = req.body;
-    try {
-        await Site.update(id, nome, url, icon);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const { error } = await supabase.from('sites').update({ nome, url, icon }).eq('id', id);
+    if (error) return res.status(500).json(error);
+    res.json({ success: true });
 };
 
 export const excluirSite = async (req, res) => {
-    const { id } = req.params;
-    try {
-        await Site.remove(id);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const { error } = await supabase.from('sites').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json(error);
+    res.json({ success: true });
+};
+
+export const atualizarSite = async (req, res) => {
+    const { id, selected } = req.body;
+    const { error } = await supabase.from('sites').update({ selected }).eq('id', id);
+    if (error) return res.status(500).json(error);
+    res.json({ success: true });
 };
 
 export const abrirWorkspace = async (req, res) => {
     const { urls } = req.body;
-    axios.post('http://localhost:3001/ultron/chat', {
-        mensagem: 'CHROME_CUSTOM',
-        urls: urls
-    }).catch(err => console.error("CORE 3001 OFFLINE"));
-
-    res.json({ success: true, status: "Ambiente disparado" });
+    const pedidos = urls.map(url => ({ url, status: 'pending' }));
+    const { error } = await supabase.from('navegador_queue').insert(pedidos);
+    if (error) return res.status(500).json(error);
+    res.json({ success: true });
 };
