@@ -1,10 +1,10 @@
 import express from 'express';
-import * as DockerController from '../controllers/DockerController.js';
+import { listarContainers, executarAcao, sincronizarAgora } from '../controllers/DockerController.js';
 
 const router = express.Router();
 
-router.get('/list', DockerController.listarContainers);
-router.post('/action', DockerController.executarAcao);
-router.get('/sync', DockerController.sincronizarAgora);
+router.get('/list', listarContainers);
+router.post('/action', executarAcao);
+router.get('/sync', sincronizarAgora);
 
 export default router;

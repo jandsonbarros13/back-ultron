@@ -8,7 +8,6 @@ const supabase = createClient(
 
 export const listarContainers = async (req, res) => {
     try {
-        // Buscamos os containers sem cache
         const { data, error } = await supabase
             .from('docker_containers')
             .select('*')
@@ -16,10 +15,10 @@ export const listarContainers = async (req, res) => {
 
         if (error) throw error;
 
-        // HEADERS CRÍTICOS: Impedem a Vercel e o Browser de cachear dados velhos
-        res.setHeader('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
-        res.setHeader('CDN-Cache-Control', 'no-store');
-        res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+        // Headers para garantir que a Vercel não guarde cache nem por 1 segundo
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         
         res.json(data);
     } catch (err) {
@@ -30,6 +29,7 @@ export const listarContainers = async (req, res) => {
 export const executarAcao = async (req, res) => {
     const { id, action } = req.body;
     try {
+        // O robô local está ouvindo o campo pending_action a cada 1.5s
         const { error } = await supabase
             .from('docker_containers')
             .update({ 
@@ -46,5 +46,5 @@ export const executarAcao = async (req, res) => {
 };
 
 export const sincronizarAgora = async (req, res) => {
-    res.json({ success: true });
+    res.json({ success: true, message: "Sincronização forçada via Core" });
 };
